@@ -37,6 +37,7 @@ library(kableExtra)
 library(rmarkdown)
 library(RColorBrewer)
 library(classInt)
+library(tmap)
 ```
 
 
@@ -86,26 +87,64 @@ tracts17 <-
   rename(TotalPop = B25026_001E, 
          MedRent = B25058_001E) %>%
   dplyr::select(-NAME, -starts_with("B")) %>%
-  mutate(area_sqFt = (as.numeric(st_area(.))))
+  mutate(TotalPop = as.numeric(TotalPop),
+    area_sqFt = as.numeric(st_area(.)))
 ```
+```{r}
+0.00000003587006 * 27878400
+```
+
 
 As a warm-up, calculate the population density of each tract. We will then try to make a slightly better choropleth map than the one we did previously.
 The code below just uses population as an example. It is a ggplot map that contains discrete groups - broken into quantiles
+```{r}
+tracts17 <- tracts17 %>%
+  mutate(pop_density = (TotalPop/(area_sqFt/27878400)))
+
+ggplot()+
+  geom_sf(data = tracts17, aes(fill = pop_density))+
+  geom_sf(data = uga, fill = "transparent", color = "black", linetype=5, lwd=0.5)+
+  scale_fill_distiller(palette = "Reds", direction = 1)+
+  labs(title = "Population Density of Census Tracts in Lancaster County", fill = "Population Density") +
+  theme_void()
+  
+
+breaks_quantiles <- classIntervals(tracts17$pop_density, n = 5, style = "quantile")
+colors <- brewer.pal(n = 5, name = "YlGnBu")
+
+labels <- paste0(formatC(breaks_quantiles$brks[-length(breaks_quantiles$brks)], format = "f", digits = 1, big.mark = ","), 
+                 " - ", 
+                 formatC(breaks_quantiles$brks[-1], format = "f", digits = 1, big.mark = ","))
+
+# Create improved map with custom range labels for legend
+map_improved2 <- ggplot() +
+  geom_sf(data = tracts17, aes(fill = cut(pop_density, breaks = breaks_quantiles$brks, include.lowest = TRUE)), color = "transparent") +
+  scale_fill_manual(values = colors,
+                     name = "Population Density (per sqmi)",
+                     labels = labels) +  # Use custom range labels
+  geom_sf(data = uga, fill = NA, color = "black", linetype = 1, lwd = 0.5) +  # Use NA for fill to make the boundaries transparent
+  labs(title = "Population Density of Census Tracts in Lancaster County", fill = "Population Density") +
+  theme_void()
+
+# Display the map
+map_improved2
+
+```
 
 
 ```{r improvedmap}
  # Assuming tracts17 and uga are loaded and properly formatted spatial dataframes
 
 # Calculate quantiles for class breaks
-breaks_quantiles <- classIntervals(tracts17$TotalPop, n = 5, style = "quantile")
+breaks_quantiles2 <- classIntervals(tracts17$TotalPop, n = 5, style = "quantile")
 
 # Define colors using ColorBrewer palette - matching the number of breaks
 colors <- brewer.pal(n = 5, name = "YlGnBu")
 
 # Generate custom labels showing the range of each class
-labels <- paste0(formatC(breaks_quantiles$brks[-length(breaks_quantiles$brks)], format = "f", digits = 1, big.mark = ","), 
+labels <- paste0(formatC(breaks_quantiles2$brks[-length(breaks_quantiles2$brks)], format = "f", digits = 1, big.mark = ","), 
                  " - ", 
-                 formatC(breaks_quantiles$brks[-1], format = "f", digits = 1, big.mark = ","))
+                 formatC(breaks_quantiles2$brks[-1], format = "f", digits = 1, big.mark = ","))
 
 # Create improved map with custom range labels for legend
 map_improved <- ggplot() +
@@ -147,6 +186,17 @@ map <- map +
 
 
 See the code below. Change to population density. Experiment with the settings. Try to add an outer border to the map indicating the county outline. 
+
+```{r}
+install.packages("tmap", repos=c("https://r-tmap.r-universe.dev", "https://cloud,r-project.org"))
+install.packages("leaflegend")
+```
+
+```{r}
+library(tmap)
+```
+
+
 
 ```{r tmapversion}
 map_improved <- tm_shape(tracts17) +
@@ -207,12 +257,14 @@ Try taking it apart and figuring out what's going on. A detailed explanation fol
 outsideBuffer <-
   st_buffer(uga_union, 660) %>%
   st_difference(uga_union) %>%
+  st_cast("POLYGON")%>%
   mutate(Legend = "Outside")
 
 
 insideBuffer <- 
   st_buffer(uga_union, dist = -660) %>%
   st_difference(uga_union, .) %>%
+  st_cast("POLYGON")%>%
   mutate(Legend = "Inside")
 
 bothBuffers <- rbind(insideBuffer, outsideBuffer)
@@ -284,6 +336,9 @@ buffersAndTowns <-
 
 # Challenge 1: Compare densities
 Can you make a table summarizing population density of tracts inside versus outside the boundary? (buffer)
+```{r}
+
+```
 
 
 # Mapping Challenge 
