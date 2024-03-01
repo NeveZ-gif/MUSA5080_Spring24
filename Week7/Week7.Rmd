@@ -117,6 +117,8 @@ vif(lm.fit1)
 ```
 
 ```{r tinkering with data}
+library(sf)
+library(dplyr)
 Auto.1 <- as.data.frame(Auto)
 
 Auto.1 <- Auto.1 %>%
@@ -226,11 +228,11 @@ These error rates are $18.72$ and $18.79$, respectively.
 If we choose a different training set instead, then we will obtain somewhat different errors on the validation set.
 
 ```{r differentseed}
-set.seed(2)
+set.seed(2) #using a different random number generator
 train <- sample(392, 196)
 lm.fit <- lm(mpg ~ horsepower, subset = train)
 mean((mpg - predict(lm.fit, Auto))[-train]^2)
-lm.fit2 <- lm(mpg ~ poly(horsepower, 2), data = Auto, 
+lm.fit2 <- lm(mpg ~ poly(horsepower, 2), data = Auto, #quadratic
     subset = train)
 mean((mpg - predict(lm.fit2, Auto))[-train]^2)
 lm.fit3 <- lm(mpg ~ poly(horsepower, 3), data = Auto, 
@@ -249,7 +251,7 @@ The LOOCV estimate can be automatically computed for any generalized linear mode
 We will use the glm family of models soon to estimate other, non-linear regressions. But for now, it acts the same as the lm function if we just use the defaults.
 
 ```{r glm}
-glm.fit <- glm(mpg ~ horsepower, data = Auto)
+glm.fit <- glm(mpg ~ horsepower, data = Auto) #glm is the linear regression here
 coef(glm.fit)
 ```
 
@@ -265,7 +267,7 @@ We will  perform linear regression using the `glm()` function rather than the `l
 library(boot)
 glm.fit <- glm(mpg ~ horsepower, data = Auto)
 cv.err <- cv.glm(Auto, glm.fit)
-cv.err$delta
+cv.err$delta #delta is the difference between model trained on full data vs. model trained on subset data, we should aim for the two models to be similar
 ```
 
 The `cv.glm()` function produces a list with several components.  The two numbers in the `delta` vector contain the cross-validation results. In this case the numbers are identical (up to two decimal places) and correspond to the LOOCV statistic.
