@@ -49,12 +49,7 @@ The in-class exercise at the end encourages students to modify the existing code
 ```{r read_data}
 
 nhoods <- 
-  st_read("https://github.com/ECDelmelle/MUSA5080_Spring24/blob/main/Week7/BPDA_Neighborhood_Boundaries.geojson") %>%
-  st_transform('ESRI:102286')
-
-##If that is failing you, download the data to your own personal computer and link to the full path name. Sorry!
-
-nhoods <- st_read("~/Documents/MUSA508_Spring24/Week7/BPDA_Neighborhood_Boundaries.geojson")%>%
+  st_read("BPDA_Neighborhood_Boundaries.geojson") %>%
   st_transform('ESRI:102286')
 
 boston <- 
@@ -90,6 +85,9 @@ See if you can alter the size of the image output. Search for adjusting figure h
 ```{r price_map}
 # ggplot, reorder
 boston.sf$quintiles <- ntile(boston.sf$PricePerSq, 5)
+
+palette5 <- brewer.pal(5, "YlGnBu")
+
 # Mapping data
 ggplot() +
   geom_sf(data = nhoods, fill = "lightgrey", col = "white") +
@@ -388,7 +386,7 @@ Better R-squared - does that mean it's a better model?
 
 ```{r mutlivariate_regression}
 reg1 <- lm(SalePrice ~ ., data = boston_sub_200k %>% 
-                                 dplyr::select(SalePrice, LivingArea, Style, 
+                                 dplyr::select(SalePrice, LivingArea,
                                                GROSS_AREA, R_TOTAL_RM, NUM_FLOORS,
                                                R_BDRMS, R_FULL_BTH, R_HALF_BTH, 
                                                R_KITCH, R_AC, R_FPLACE))
